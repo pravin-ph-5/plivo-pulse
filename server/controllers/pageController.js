@@ -1,29 +1,43 @@
-// hah om sai ram om bhaskaraaya namaha om namaha sivayaa 
-
-// hah om sai ram om bhaskaraya namaha om namaha sivaya
+// hah om sai ram om bhaskaraaya namaha om namaha sivayaa
 
 import Page from '../models/Page.js'
-import User from '../models/User.js'
 import Component from '../models/Component.js'
 import Incident from '../models/Incident.js'
 import Maintenance from '../models/Maintenance.js'
 import Subscriber from '../models/Subscriber.js'
 
-// Create a new page
 export const createPage = async (req, res) => {
   try {
     const { name, slug } = req.body
-    const ownerId = req.user.id // assuming user ID comes from JWT middleware
+    const ownerId = req.user
 
     const existing = await Page.findOne({ slug })
     if (existing) return res.status(400).json({ message: 'Slug already taken' })
 
-    const page = await Page.create({
+    // Step 1: Create the page with only required fields
+    const page = new Page({
       name,
       slug,
-      owner: ownerId,
-      teammates: [{ user: ownerId, role: 'admin' }]
+      owner: ownerId
     })
+
+    // Step 2: Save page first to get the page._id
+    await page.save()
+
+    // Step 3: Create default component (API)
+    const apiComponent = await Component.create({
+      name: 'API',
+      status: 'operational',
+      page: page._id
+    })
+
+    // Step 4: Attach the component to page
+    page.components.push(apiComponent._id)
+
+    // Optional: Add owner as default teammate
+    page.teammates.push({ user: ownerId, role: 'admin' })
+
+    await page.save()
 
     res.status(201).json(page)
   } catch (err) {
@@ -32,18 +46,18 @@ export const createPage = async (req, res) => {
   }
 }
 
-// Get all pages owned by the current user
+
+// Get all pages owned by current user
 export const getAllPagesByUser = async (req, res) => {
   try {
-    const userId = req.user.id
-    const pages = await Page.find({ owner: userId })
+    const pages = await Page.find({ owner: req.user.id })
       .populate('components')
       .populate('incidents')
       .populate('maintenance')
       .populate('subscriptions')
       .populate('teammates.user', 'name email')
 
-    res.json(pages)
+    res.status(200).json(pages)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
@@ -54,6 +68,7 @@ export const getAllPagesByUser = async (req, res) => {
 export const getPageBySlug = async (req, res) => {
   try {
     const { slug } = req.params
+
     const page = await Page.findOne({ slug })
       .populate('components')
       .populate('incidents')
@@ -61,14 +76,14 @@ export const getPageBySlug = async (req, res) => {
 
     if (!page) return res.status(404).json({ message: 'Page not found' })
 
-    res.json(page)
+    res.status(200).json(page)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
   }
 }
 
-// Update page info (name or slug)
+// Update page (name, slug)
 export const updatePage = async (req, res) => {
   try {
     const { pageId } = req.params
@@ -80,14 +95,14 @@ export const updatePage = async (req, res) => {
       { new: true }
     )
 
-    res.json(updated)
+    res.status(200).json(updated)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
   }
 }
 
-// Delete a page
+// Delete a page and all its associated data
 export const deletePage = async (req, res) => {
   try {
     const { pageId } = req.params
@@ -95,7 +110,6 @@ export const deletePage = async (req, res) => {
     const page = await Page.findById(pageId)
     if (!page) return res.status(404).json({ message: 'Page not found' })
 
-    // Remove referenced documents
     await Component.deleteMany({ _id: { $in: page.components } })
     await Incident.deleteMany({ _id: { $in: page.incidents } })
     await Maintenance.deleteMany({ _id: { $in: page.maintenance } })
@@ -103,14 +117,14 @@ export const deletePage = async (req, res) => {
 
     await Page.findByIdAndDelete(pageId)
 
-    res.json({ message: 'Page and associated data deleted successfully' })
+    res.status(200).json({ message: 'Page and associated data deleted successfully' })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
   }
 }
 
-// Add a teammate
+// Add a teammate to a page
 export const addTeammate = async (req, res) => {
   try {
     const { pageId } = req.params
@@ -119,20 +133,20 @@ export const addTeammate = async (req, res) => {
     const page = await Page.findById(pageId)
     if (!page) return res.status(404).json({ message: 'Page not found' })
 
-    const alreadyExists = page.teammates.find(t => t.user.toString() === userId)
-    if (alreadyExists) return res.status(400).json({ message: 'User already added' })
+    const exists = page.teammates.some(t => t.user.toString() === userId)
+    if (exists) return res.status(400).json({ message: 'User already a teammate' })
 
     page.teammates.push({ user: userId, role })
     await page.save()
 
-    res.json(page)
+    res.status(200).json(page)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
   }
 }
 
-// Remove a teammate
+// Remove a teammate from a page
 export const removeTeammate = async (req, res) => {
   try {
     const { pageId, userId } = req.params
@@ -143,7 +157,7 @@ export const removeTeammate = async (req, res) => {
     page.teammates = page.teammates.filter(t => t.user.toString() !== userId)
     await page.save()
 
-    res.json({ message: 'Teammate removed successfully' })
+    res.status(200).json({ message: 'Teammate removed successfully' })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })

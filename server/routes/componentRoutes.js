@@ -1,23 +1,20 @@
-// hah om sai ram om bhaskaraaya namaha om namaha sivayaa
+// hah om sai ram om bhaskaraya namaha om namaha sivaya
 
 import express from 'express'
 import {
   createComponent,
-  getComponents,
+  getComponentsByPage,
   updateComponent,
-  deleteComponent,
+  deleteComponent
 } from '../controllers/componentController.js'
+import authMiddleware from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router
-  .route('/:pageId/components')
-  .post(createComponent)
-  .get(getComponents)
-
-router
-  .route('/component/:componentId')
-  .put(updateComponent)
-  .delete(deleteComponent)
+// /api/pages/:pageId/components
+router.post('/:pageId/components', authMiddleware, createComponent)
+router.get('/:pageId/components', getComponentsByPage)
+router.put('/:pageId/components/:componentId', authMiddleware, updateComponent)
+router.delete('/:pageId/components/:componentId', authMiddleware, deleteComponent)
 
 export default router

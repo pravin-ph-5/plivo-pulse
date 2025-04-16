@@ -1,4 +1,4 @@
-// hah om sai ram om bhaskaraaya namaha om namaha sivayaa 
+// hah om sai ram om bhaskaraaya namaha om namaha sivayaa
 
 import mongoose from 'mongoose'
 import TeammateSchema from './Teammate.js'
@@ -12,28 +12,31 @@ const PageSchema = new mongoose.Schema({
     required: true
   },
 
-  // Embedded teammates using the separated schema
-  teammates: [TeammateSchema],
+  teammates: {
+    type: [TeammateSchema],
+    default: []  // Now optional
+  },
 
-  // Referencing components, incidents, maintenance and subscribers
   components: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Component'
+    ref: 'Component',
+    default: [] // Now optional
   }],
   incidents: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Incident'
+    ref: 'Incident',
+    default: []
   }],
   maintenance: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Maintenance'
+    ref: 'Maintenance',
+    default: []
   }],
   subscriptions: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subscriber'
-  }],
-
-  createdAt: { type: Date, default: Date.now }
+    ref: 'Subscriber',
+    default: []
+  }]
 }, { timestamps: true })
 
 export default mongoose.model('Page', PageSchema)

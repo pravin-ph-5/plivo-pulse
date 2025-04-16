@@ -1,0 +1,12 @@
+// hah om sai ram om bhaskaraya namaha om namaha sivayaa 
+// jsconfig.json
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./src/*"]
+      }
+    },
+    "include": ["src"]
+  }
+  

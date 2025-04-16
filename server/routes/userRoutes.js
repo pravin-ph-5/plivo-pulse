@@ -10,6 +10,8 @@ import {
   deleteUser,
 } from '../controllers/userController.js'
 
+import authMiddleware from '../middleware/authMiddleware.js'
+
 const router = express.Router()
 
 // Auth routes
@@ -17,11 +19,11 @@ router.post('/register', register)
 router.post('/login', login)
 router.post('/logout', logout)
 
-// User CRUD using route()
+// Protected User CRUD routes
 router
   .route('/:id')
-  .get(getUser)
-  .put(updateUser)
-  .delete(deleteUser)
+  .get(authMiddleware, getUser)
+  .put(authMiddleware, updateUser)
+  .delete(authMiddleware, deleteUser)
 
 export default router
